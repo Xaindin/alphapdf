@@ -1,0 +1,846 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Alpha — Line 1 & Line 2 Forms</title>
+
+<!-- PDF libs -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+
+<style>
+  :root{
+    --card:rgba(15,15,25,.78);
+    --border:rgba(255,255,255,.12);
+    --text:#e8f0ff;
+    --muted:#a5b4fc;
+    --bg:#0a0a12;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  html{scroll-behavior:smooth}
+  [id^="sec-"]{scroll-margin-top:90px}
+  body{
+    margin:0;font-family:Inter,system-ui,Segoe UI,Roboto,Arial;
+    background:var(--bg);color:var(--text);overflow-x:hidden
+  }
+  .bg{position:fixed;inset:0;z-index:-3;background:
+    radial-gradient(1200px 700px at 20% -10%, #0ea5e9 0%, transparent 60%),
+    radial-gradient(1000px 600px at 80% 110%, #a78bfa 0%, transparent 60%),
+    linear-gradient(135deg,#0b1220,#0a0a12 40%,#0b1326);
+    animation:shift 18s ease-in-out infinite alternate}
+  @keyframes shift{to{background-position:50px -40px,-60px 30px,0 0}}
+  canvas#glitter{position:fixed;inset:0;z-index:-2;pointer-events:none;opacity:.45}
+
+  .container{max-width:1400px;margin:24px auto;padding:16px}
+  .brand{display:flex;align-items:center;gap:14px;margin-bottom:10px}
+  .alpha-logo{height:72px;width:72px;object-fit:contain}
+  h1{margin:0;text-shadow:0 0 10px rgba(124,58,237,.35);font-size:24px}
+
+  .tabs{display:flex;gap:8px;margin:10px 0 14px}
+  .tab{cursor:pointer;padding:10px 14px;border-radius:999px;border:1px solid var(--border);background:rgba(255,255,255,.06);font-weight:700}
+  .tab.active{background:linear-gradient(135deg,rgba(124,58,237,.9),rgba(6,182,212,.9));border-color:transparent}
+
+  .card{background:var(--card);border:1px solid var(--border);border-radius:18px;padding:16px;backdrop-filter:blur(12px);margin-bottom:16px}
+  .grid{display:grid;grid-template-columns:repeat(12,1fr);gap:10px}
+  .col-3{grid-column:span 3}.col-4{grid-column:span 4}.col-6{grid-column:span 6}.col-8{grid-column:span 8}.col-12{grid-column:span 12}
+
+  label{display:block;font-size:12px;color:var(--muted);margin:6px 0 4px}
+  input,select,textarea{
+    width:100%;border:1px solid var(--border);border-radius:12px;padding:10px 12px;font-size:14px;
+    background:#0f1322;color:var(--text);outline:none
+  }
+  select, option{background:#0b0f1a;color:#e8f0ff}
+  textarea{min-height:90px;resize:vertical}
+  .btn{border:1px solid rgba(255,255,255,.18);background:linear-gradient(135deg,rgba(124,58,237,.9),rgba(6,182,212,.9));color:#fff;border-radius:999px;padding:10px 14px;font-weight:700;cursor:pointer}
+  .btn.ghost{background:transparent;color:var(--text)}
+  .note{font-size:12px;color:#c7d2fe;margin-left:8px}
+  .hide{display:none}
+
+  /* Line 2 top nav */
+  .l2-nav{position:sticky;top:10px;z-index:2;display:flex;flex-wrap:wrap;gap:8px;margin-bottom:8px;align-items:center}
+  .l2-nav a{padding:8px 12px;border:1px solid var(--border);border-radius:999px;background:rgba(255,255,255,.06);text-decoration:none;color:var(--text);font-weight:600;font-size:13px}
+  .l2-nav a:hover{background:rgba(255,255,255,.12)}
+  .l2-right{margin-left:auto;display:flex;gap:8px}
+
+  /* tables */
+  .table-wrapper{overflow-x:auto}
+  .table{width:100%;border-collapse:separate;border-spacing:0;min-width:1600px}
+  .table th,.table td{border:1px solid var(--border);padding:10px;font-size:13px;vertical-align:middle}
+  .table th{white-space:nowrap}
+  .table td input{
+    padding:10px 12px;border-radius:10px;background:#0b0f1a;border:1px solid var(--border);color:var(--text);width:100%;display:block;
+  }
+  /* bank column sizes for visibility */
+  #l2_bankTable th:nth-child(1), #l2_bankTable td:nth-child(1){min-width:180px;} /* Bank Name */
+  #l2_bankTable th:nth-child(4), #l2_bankTable td:nth-child(4){min-width:110px;} /* Year */
+  #l2_bankTable th:nth-child(10),#l2_bankTable td:nth-child(10){min-width:160px;} /* UPI */
+  #l2_bankTable th:nth-child(15),#l2_bankTable td:nth-child(15){min-width:150px;} /* Distance */
+
+  /* assets tidy layout incl EPF/GPF */
+  .asset-group{display:flex;flex-direction:column;gap:12px}
+  .asset-field{display:flex;flex-direction:column;gap:6px}
+  .asset-two{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+</style>
+</head>
+<body>
+<div class="bg"></div><canvas id="glitter"></canvas>
+
+<div class="container">
+  <div class="brand">
+    <img class="alpha-logo" src="logo.png" alt="Alpha" />
+    <h1>Alpha — Client Intake</h1>
+  </div>
+
+  <div class="tabs">
+    <button class="tab active" data-target="#tab-line1">Line 1</button>
+    <button class="tab" data-target="#tab-line2">Line 2</button>
+  </div>
+
+  <!-- ============ LINE 1 (X1–X31 odd only) ============ -->
+  <form id="tab-line1" class="card">
+    <div class="grid">
+      <div class="col-4">
+        <label>🗂️ Line 1 Player ID *</label>
+        <select name="line1Id" id="l1_slot" required>
+          <option value="">Select</option>
+        </select>
+      </div>
+      <div class="col-8">
+        <label>PLAYER NAME *</label>
+        <input name="playerName" required />
+      </div>
+      <div class="col-12"><label>🧑‍💼 Customer</label><input name="customer"/></div>
+      <div class="col-6"><label>📞 Number</label><input name="number" type="tel"/></div>
+      <div class="col-6"><label>🗣️ Language</label>
+        <select name="language"><option value=""></option><option>Hindi</option><option>English</option><option>Gujarati</option><option>Bengali</option><option>Marathi</option><option>Punjabi</option><option>Telugu</option><option>Tamil</option><option>Kannada</option><option>Other</option></select>
+      </div>
+      <div class="col-3"><label>🎂 Age</label><input name="age"/></div>
+      <div class="col-3"><label>🚻 Gender</label><select name="gender"><option value=""></option><option>male</option><option>female</option><option>other</option></select></div>
+      <div class="col-6"><label>📍 Location</label><input name="location"/></div>
+      <div class="col-6"><label>🏭 Profession</label>
+        <select name="profession">
+          <option value=""></option>
+          <option>Businessman</option><option>Engineer</option><option>Shopkeeper</option><option>Doctor</option>
+          <option>Teacher</option><option>Lawyer</option><option>Government Employee</option><option>Private Employee</option>
+          <option>IT Professional</option><option>Driver</option><option>Farmer</option><option>Plumber</option>
+          <option>Electrician</option><option>Carpenter</option><option>Security Guard</option><option>Housewife / Homemaker</option>
+          <option>Student</option><option>Freelancer</option><option>Retired</option><option>Unemployed / Looking</option>
+        </select>
+      </div>
+      <div class="col-12"><label>📝 Remarks</label><textarea name="remarks"></textarea></div>
+    </div>
+    <div style="display:flex;gap:10px;align-items:center;justify-content:flex-end;margin-top:8px">
+      <span class="note">Submitting to <b>line 1 data</b></span>
+      <button class="btn" type="submit">Submit</button>
+    </div>
+    <div class="note" id="status1"></div>
+  </form>
+
+  <!-- ============ LINE 2 (sectioned) ============ -->
+  <form id="tab-line2" class="card hide">
+    <!-- sticky quick nav -->
+    <div class="l2-nav">
+      <a href="#sec-personal">Personal</a>
+      <a href="#sec-family">Family</a>
+      <a href="#sec-calls">Calls</a>
+      <a href="#sec-stage">Stage</a>
+      <a href="#sec-bank">Bank</a>
+      <a href="#sec-assets">Assets</a>
+      <div class="l2-right">
+        <button class="btn ghost" type="button" id="l2_downloadPdf">Download PDF</button>
+        <button class="btn ghost" type="button" id="l2_saveDraft">Save Draft</button>
+        <button class="btn ghost" type="button" id="l2_loadDraft">Load Draft</button>
+      </div>
+    </div>
+
+    <!-- Personal -->
+    <div id="sec-personal" class="card">
+      <h3 style="margin:4px 0 12px 0">Personal Details</h3>
+      <div class="grid">
+        <div class="col-6"><label>Client Name *</label><input name="clientName" required/></div>
+        <div class="col-3"><label>Date</label><input type="date" name="date"/></div>
+        <div class="col-3"><label>Time</label><input type="time" name="time"/></div>
+
+        <div class="col-3"><label>Language</label>
+          <select name="language"><option value="">Select</option><option>English</option><option>Hindi</option><option>Gujarati</option><option>Other</option></select>
+        </div>
+        <div class="col-4"><label>Line 1</label>
+          <select id="l2_line1" name="line1"><option value="">Select</option></select>
+        </div>
+        <div class="col-4"><label>Line 2</label>
+          <select id="l2_line2" name="line2"><option value="">Select</option></select>
+        </div>
+        <div class="col-4"><label>Line 3</label>
+          <select name="line3"><option value="">Select</option><option>C1</option><option>C2</option></select>
+        </div>
+
+        <div class="col-3"><label>Charging (%)</label><input type="number" min="0" max="100" name="charging"/></div>
+        <div class="col-3"><label>Plugin</label><input name="plugin"/></div>
+        <div class="col-6"><label>Current Location</label>
+          <select name="currentLocation"><option value="">Select</option><option>Home</option><option>Office</option><option>Work</option><option>Friend</option><option>Other</option></select>
+        </div>
+
+        <div class="col-3"><label>Third Party (Y/N)</label><select name="thirdParty"><option value=""></option><option>Y</option><option>N</option></select></div>
+        <div class="col-3"><label>Client DOB</label><input type="date" name="dob"/></div>
+        <div class="col-3"><label>Client Age</label><input type="number" min="0" name="age"/></div>
+        <div class="col-3"><label>Aadhaar Number</label><input name="aadhaar"/></div>
+
+        <div class="col-3"><label>Gender</label><select name="gender"><option value=""></option><option>Male</option><option>Female</option><option>Other</option></select></div>
+        <div class="col-3"><label>Marriage (Y/N)</label><select name="marriage"><option value=""></option><option>Y</option><option>N</option></select></div>
+        <div class="col-3"><label>Kids (0–5)</label><select name="kids"><option value=""></option><option>0</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5+</option></select></div>
+        <div class="col-3"><label>Date of Marriage</label><input type="date" name="dom"/></div>
+
+        <div class="col-3"><label>Number (Y/N)</label><select name="numberActive"><option value=""></option><option>Y</option><option>N</option></select></div>
+        <div class="col-3"><label>WhatsApp (Y/N)</label><select name="whatsapp"><option value=""></option><option>Y</option><option>N</option></select></div>
+        <div class="col-3"><label>Phone Number</label><input name="phone1"/></div>
+        <div class="col-3"><label>2nd Number</label><input name="phone2"/></div>
+
+        <div class="col-3"><label>Emergency No</label><input name="emergencyNo"/></div>
+        <div class="col-6"><label>E-mail</label><input type="email" name="email"/></div>
+        <div class="col-3"><label>Education</label>
+          <select name="education"><option value=""></option><option>Uneducated</option><option>Higher Edu</option><option>Bachelor</option><option>Master</option><option>Doctor/PHD</option></select>
+        </div>
+
+        <div class="col-3"><label>Work (Y/N)</label><select name="workYN"><option value=""></option><option>Y</option><option>N</option></select></div>
+        <div class="col-3"><label>Position</label><input name="position"/></div>
+        <div class="col-3"><label>Employment</label><select name="employment"><option value=""></option><option>Employed</option><option>Self-Employed</option><option>Student</option><option>Retired</option></select></div>
+        <div class="col-3"><label>Working Since</label><input type="number" min="1900" max="2100" name="workSince"/></div>
+
+        <div class="col-6"><label>Company Name</label><input name="companyName"/></div>
+        <div class="col-12"><label>Current Address</label><input name="currentAddress"/></div>
+
+        <div class="col-3"><label>Phone Model</label><input name="phoneModel"/></div>
+        <div class="col-3"><label>Other Phone (Y/N)</label><select name="otherPhoneYN"><option value=""></option><option>Y</option><option>N</option></select></div>
+        <div class="col-3"><label>Laptop (Y/N)</label><select name="laptopYN"><option value=""></option><option>Y</option><option>N</option></select></div>
+        <div class="col-3"><label>2-wheeler (Y/N)</label><select name="twoWheelerYN"><option value=""></option><option>Y</option><option>N</option></select></div>
+        <div class="col-3"><label>4-wheeler (Y/N)</label><select name="fourWheelerYN"><option value=""></option><option>Y</option><option>N</option></select></div>
+        <div class="col-3"><label>Total vehicles</label><input type="number" min="0" name="totalVehicle"/></div>
+        <div class="col-3"><label>Height (cm)</label><input type="number" min="0" name="height"/></div>
+        <div class="col-3"><label>Weight (kg)</label><input type="number" min="0" name="weight"/></div>
+        <div class="col-6"><label>Color Tone</label><select name="colorTone"><option value=""></option><option>Fair</option><option>Wheatish</option><option>Dusky</option><option>Dark</option></select></div>
+
+        <div class="col-3"><label>Passport (Y/N)</label><select name="passportYN"><option value=""></option><option>Y</option><option>N</option></select></div>
+        <div class="col-3"><label>Voter ID (Y/N)</label><select name="voterIdYN"><option value=""></option><option>Y</option><option>N</option></select></div>
+        <div class="col-3"><label>Place of Birth</label><input name="pob"/></div>
+        <div class="col-3"><label>Nationality</label><input name="nationality"/></div>
+        <div class="col-3"><label>Visa Rejected (Y/N)</label><select name="visaRejected"><option value=""></option><option>Y</option><option>N</option></select></div>
+        <div class="col-3"><label>Overstay (Y/N)</label><select name="overstayYN"><option value=""></option><option>Y</option><option>N</option></select></div>
+      </div>
+    </div>
+
+    <!-- Family -->
+    <div id="sec-family" class="card">
+      <h3 style="margin:4px 0 12px 0">Family Members</h3>
+      <div class="table-wrapper">
+        <table class="table" style="min-width:1200px" id="l2_familyTable">
+          <thead><tr>
+            <th>Member</th><th>Age</th><th>Job</th><th>Work/School Time</th>
+            <th>Home Time</th><th>Work Off</th><th>Remarks</th><th>Expected Visitors</th><th></th>
+          </tr></thead><tbody></tbody>
+        </table>
+      </div>
+      <div style="margin-top:8px"><button type="button" class="btn" onclick="L2.addFamilyRow()">+ Add Member</button></div>
+    </div>
+
+    <!-- Calls -->
+    <div id="sec-calls" class="card">
+      <h3 style="margin:4px 0 12px 0">Daily Call Log</h3>
+      <div class="table-wrapper">
+        <table class="table" style="min-width:1200px" id="l2_callTable">
+          <thead><tr>
+            <th>Relation</th><th>Time</th><th>Reason</th><th>Duration</th><th>Platform</th>
+            <th>1st</th><th>2nd</th><th>3rd</th><th>4th</th><th>5th</th><th>6th</th><th></th>
+          </tr></thead><tbody></tbody>
+        </table>
+      </div>
+      <div style="margin-top:8px"><button type="button" class="btn" onclick="L2.addCallRow()">+ Add Call</button></div>
+    </div>
+
+    <!-- Stage -->
+    <div id="sec-stage" class="card">
+      <h3 style="margin:4px 0 12px 0">Client Stage (According to the Script)</h3>
+      <div class="grid">
+        <div class="col-3">
+          <label><input type="checkbox" name="stage_whatsapp"> WhatsApp</label>
+          <label><input type="checkbox" name="stage_idPhoto"> ID Photo</label>
+          <label><input type="checkbox" name="stage_frontId"> Front ID</label>
+          <label><input type="checkbox" name="stage_backId"> Back ID</label>
+        </div>
+        <div class="col-3">
+          <label><input type="checkbox" name="stage_cis"> CIS</label>
+          <label><input type="checkbox" name="stage_mainSuspect"> Main Suspect</label>
+          <label><input type="checkbox" name="stage_evidence"> Evidence</label>
+          <label><input type="checkbox" name="stage_cLetter"> C Letter</label>
+        </div>
+        <div class="col-3">
+          <label><input type="checkbox" name="stage_nSecret"> National Secret</label>
+          <label><input type="checkbox" name="stage_nsRules"> N.S. Rules & Regulations</label>
+          <label><input type="checkbox" name="stage_nsExplained"> N.S. Explained</label>
+          <label><input type="checkbox" name="stage_oath"> Oath</label>
+        </div>
+        <div class="col-3">
+          <label><input type="checkbox" name="stage_arrestWarrantExp"> Arrest Warrant Exp.</label>
+          <label><input type="checkbox" name="stage_arrestWarrantLetter"> Arrest Warrant Letter</label>
+          <label><input type="checkbox" name="stage_priority"> Priority</label>
+          <label><input type="checkbox" name="stage_request"> Request</label>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bank -->
+    <div id="sec-bank" class="card">
+      <h3 style="margin:4px 0 12px 0">Bank Details</h3>
+      <div class="table-wrapper">
+        <table class="table" id="l2_bankTable">
+          <colgroup>
+            <col style="width:auto"><col style="width:120px"><col style="width:140px"><col style="width:110px">
+            <col style="width:auto"><col style="width:120px"><col style="width:120px"><col style="width:150px">
+            <col style="width:150px"><col style="width:160px"><col style="width:120px"><col style="width:120px">
+            <col style="width:150px"><col style="width:150px"><col style="width:160px"><col style="width:90px">
+          </colgroup>
+          <thead><tr>
+            <th title="Full bank name">Bank</th>
+            <th title="Single or Joint account">S/J</th>
+            <th title="Saving or Current">Type</th>
+            <th title="Account opening year">Year</th>
+            <th>Purpose</th>
+            <th>Cheque</th>
+            <th>Passbook</th>
+            <th>Internet</th>
+            <th>Phone</th>
+            <th title="UPI ID">UPI</th>
+            <th>PhonePe</th>
+            <th>GPay</th>
+            <th title="Closing Balance">CB</th>
+            <th title="Fixed Deposit">FD</th>
+            <th title="Distance to Bank (km)">Distance (km)</th>
+            <th></th>
+          </tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <div style="margin-top:8px"><button type="button" class="btn" onclick="L2.addBankRow()">+ Add Bank</button></div>
+    </div>
+
+    <!-- Assets -->
+    <div id="sec-assets" class="card">
+      <h3 style="margin:4px 0 12px 0">Assets (Ask in detail)</h3>
+      <div class="grid">
+        <div class="col-3 asset-group">
+          <div class="asset-field">
+            <label><input id="l2_asset_rd" type="checkbox"> RD</label>
+            <input class="asset-amt" id="l2_asset_rd_amt" type="number" min="0" step="0.01" placeholder="Amount">
+          </div>
+          <div class="asset-field">
+            <label><input id="l2_asset_mutualFunds" type="checkbox"> Mutual Funds</label>
+            <input class="asset-amt" id="l2_asset_mutualFunds_amt" type="number" min="0" step="0.01" placeholder="Amount">
+          </div>
+          <div class="asset-field">
+            <label><input id="l2_asset_shares" type="checkbox"> Shares</label>
+            <input class="asset-amt" id="l2_asset_shares_amt" type="number" min="0" step="0.01" placeholder="Amount">
+          </div>
+          <div class="asset-field">
+            <label><input id="l2_asset_gold" type="checkbox"> Gold</label>
+            <input class="asset-amt" id="l2_asset_gold_amt" type="number" min="0" step="0.01" placeholder="Amount">
+          </div>
+          <div class="asset-field">
+            <label><input id="l2_asset_diamond" type="checkbox"> Diamond</label>
+            <input class="asset-amt" id="l2_asset_diamond_amt" type="number" min="0" step="0.01" placeholder="Amount">
+          </div>
+        </div>
+
+        <div class="col-3 asset-group">
+          <div class="asset-field">
+            <label><input id="l2_asset_silver" type="checkbox"> Silver</label>
+            <input class="asset-amt" id="l2_asset_silver_amt" type="number" min="0" step="0.01" placeholder="Amount">
+          </div>
+          <div class="asset-field">
+            <label><input id="l2_asset_vehicle" type="checkbox"> Vehicle</label>
+            <input class="asset-amt" id="l2_asset_vehicle_amt" type="number" min="0" step="0.01" placeholder="Amount">
+          </div>
+          <div class="asset-field">
+            <label><input id="l2_asset_realestate" type="checkbox"> Real estate</label>
+            <input class="asset-amt" id="l2_asset_realestate_amt" type="number" min="0" step="0.01" placeholder="Amount">
+          </div>
+          <div class="asset-field">
+            <label><input id="l2_asset_cash" type="checkbox"> Cash</label>
+            <input class="asset-amt" id="l2_asset_cash_amt" type="number" min="0" step="0.01" placeholder="Amount">
+          </div>
+          <div class="asset-field">
+            <label><input id="l2_asset_crypto" type="checkbox"> Crypto</label>
+            <input class="asset-amt" id="l2_asset_crypto_amt" type="number" min="0" step="0.01" placeholder="Amount">
+          </div>
+        </div>
+
+        <div class="col-3 asset-group">
+          <div class="asset-field">
+            <label><input id="l2_asset_ppf" type="checkbox"> PPF</label>
+            <input class="asset-amt" id="l2_asset_ppf_amt" type="number" min="0" step="0.01" placeholder="Amount">
+          </div>
+          <div class="asset-field">
+            <label><input id="l2_asset_pf" type="checkbox"> PF</label>
+            <input class="asset-amt" id="l2_asset_pf_amt" type="number" min="0" step="0.01" placeholder="Amount">
+          </div>
+          <div class="asset-two">
+            <div class="asset-field">
+              <label><input id="l2_asset_epf" type="checkbox"> EPF</label>
+              <input class="asset-amt" id="l2_asset_epf_amt" type="number" min="0" step="0.01" placeholder="Amount">
+            </div>
+            <div class="asset-field">
+              <label><input id="l2_asset_gpf" type="checkbox"> GPF</label>
+              <input class="asset-amt" id="l2_asset_gpf_amt" type="number" min="0" step="0.01" placeholder="Amount">
+            </div>
+          </div>
+          <div class="asset-field">
+            <label><input id="l2_asset_coins" type="checkbox"> Coins</label>
+            <input class="asset-amt" id="l2_asset_coins_amt" type="number" min="0" step="0.01" placeholder="Amount">
+          </div>
+          <div class="asset-field">
+            <label><input id="l2_asset_limitedBooks" type="checkbox"> Limited Books</label>
+            <input class="asset-amt" id="l2_asset_limitedBooks_amt" type="number" min="0" step="0.01" placeholder="Amount">
+          </div>
+          <div class="asset-field">
+            <label><input id="l2_asset_expWatches" type="checkbox"> Exp. Watches</label>
+            <input class="asset-amt" id="l2_asset_expWatches_amt" type="number" min="0" step="0.01" placeholder="Amount">
+          </div>
+        </div>
+
+        <div class="col-12">
+          <label>Asset Notes</label>
+          <textarea id="l2_assetNotes" placeholder="Details about assets..."></textarea>
+        </div>
+      </div>
+    </div>
+
+    <div style="display:flex;gap:10px;align-items:center;justify-content:flex-end">
+      <span class="note">Submitting to <b>line 2 data</b></span>
+      <button class="btn" type="submit">Submit</button>
+    </div>
+    <div class="note" id="status2"></div>
+  </form>
+</div>
+
+<script>
+/* =========================
+   CONFIG: set your endpoints
+   ========================= */
+const SCRIPT_URL_LINE1 = 'REPLACE_WITH_LINE1_EXEC_URL';
+const SCRIPT_URL_LINE2 = 'https://script.google.com/macros/s/AKfycbyw_04eWrvnHktSpI0iuoutd_Fs3HMfUn6d6gz0xeIJj4OzleSrJOIIWmQNgqSOdmTz/exec';
+
+/* Tabs */
+document.querySelectorAll('.tab').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    document.querySelectorAll('.tab').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    document.querySelectorAll('form.card').forEach(f=>f.classList.add('hide'));
+    document.querySelector(btn.dataset.target).classList.remove('hide');
+  });
+});
+
+/* Safe in-form section navigation for Line 2 */
+(function(){
+  const nav = document.querySelector('.l2-nav');
+  if(!nav) return;
+  nav.addEventListener('click', (e)=>{
+    const link = e.target.closest('a[href^="#"]');
+    if(!link) return;
+    e.preventDefault();
+    const target = document.querySelector(link.getAttribute('href'));
+    if(!target) return;
+
+    const line2Form = document.getElementById('tab-line2');
+    if(line2Form.classList.contains('hide')){
+      const line2TabBtn = document.querySelector('.tab[data-target="#tab-line2"]');
+      if(line2TabBtn) line2TabBtn.click();
+      setTimeout(()=> target.scrollIntoView({behavior:'smooth', block:'start'}), 50);
+    }else{
+      target.scrollIntoView({behavior:'smooth', block:'start'});
+    }
+  });
+})();
+
+/* Fill Line 1 IDs: X1, X3, ... X31 (odd numbers) */
+(function(){
+  const sel = document.getElementById('l1_slot');
+  for(let i=1;i<=31;i+=2){ const v='X'+i; sel.add(new Option(v,v)); }
+})();
+
+/* Populate Line2’s Line1 (odd X1–X31) / Line2 (even X2–X32) */
+(function(){
+  const l1 = document.getElementById('l2_line1');
+  const l2 = document.getElementById('l2_line2');
+  for(let i=1;i<=31;i+=2){ const id='X'+i; l1.add(new Option(id,id)); }
+  for(let i=2;i<=32;i+=2){ const id='X'+i; l2.add(new Option(id,id)); }
+})();
+
+/* Simple glitter */
+(function glitter(){
+  const c=document.getElementById('glitter'); const ctx=c.getContext('2d'); let w,h,stars=[];
+  function resize(){ w=c.width=innerWidth; h=c.height=innerHeight; stars=Array.from({length:120},()=>spawn()); }
+  function spawn(){ return {x:Math.random()*w,y:Math.random()*h,r:Math.random()*1.8+.4,a:Math.random()*Math.PI*2,s:Math.random()*.6+.2,tw:Math.random()*.06+.02}; }
+  function tick(){ ctx.clearRect(0,0,w,h); stars.forEach(s=>{ s.x+=Math.cos(s.a)*s.s; s.y+=Math.sin(s.a)*s.s;
+    if(s.x<0||s.x>w||s.y<0||s.y>h) Object.assign(s,spawn(),{x:(s.x<0?w:(s.x>w?0:s.x)),y:(s.y<0?h:(s.y>h?0:s.y))});
+    const g=.6+Math.sin(performance.now()*s.tw)*.4; ctx.beginPath(); ctx.fillStyle=`rgba(167,139,250,${.65*g})`; ctx.arc(s.x,s.y,s.r,0,Math.PI*2); ctx.fill();});
+    requestAnimationFrame(tick); }
+  addEventListener('resize', resize); resize(); tick();
+})();
+
+/* Utility to send forms */
+async function postTo(url, formData){
+  return fetch(url, { method:'POST', mode:'no-cors', body:new URLSearchParams(formData) });
+}
+
+/* ------- LINE 1 submit -------- */
+document.getElementById('tab-line1').addEventListener('submit', async (e)=>{
+  e.preventDefault();
+  const s = document.getElementById('status1');
+  const fd = new FormData(e.target);
+  const body = new URLSearchParams(fd);
+  s.textContent = 'Submitting…';
+  try{
+    await postTo(SCRIPT_URL_LINE1, body);
+    s.textContent = 'Submitted!';
+    e.target.reset();
+  }catch(err){ console.error(err); s.textContent='Network error'; }
+});
+
+/* ------- LINE 2 helpers -------- */
+const L2 = {
+  tableToArray(tbody, keys){
+    const rows=[]; tbody.querySelectorAll('tr').forEach(tr=>{
+      const inp = tr.querySelectorAll('input,select,textarea');
+      const o={}; keys.forEach((k,i)=>o[k]=inp[i]?inp[i].value:''); rows.push(o);
+    }); return rows;
+  },
+  addFamilyRow(obj={}){
+    const tb=document.querySelector('#l2_familyTable tbody'); const tr=document.createElement('tr');
+    tr.innerHTML = '<td><input placeholder="Member" value="'+(obj.member||'')+'"></td>' +
+      '<td><input type="number" min="0" placeholder="Age" value="'+(obj.age||'')+'"></td>' +
+      '<td><input placeholder="Job" value="'+(obj.job||'')+'"></td>' +
+      '<td><input placeholder="Work/School" value="'+(obj.workTime||'')+'"></td>' +
+      '<td><input placeholder="Home Time" value="'+(obj.homeTime||'')+'"></td>' +
+      '<td><input placeholder="Work Off" value="'+(obj.workOff||'')+'"></td>' +
+      '<td><input placeholder="Remarks" value="'+(obj.remarks||'')+'"></td>' +
+      '<td><input placeholder="Expected Visitors" value="'+(obj.expectedVisitors||'')+'"></td>' +
+      '<td><button type="button" class="btn" onclick="this.closest(`tr`).remove()">Remove</button></td>';
+    tb.appendChild(tr);
+  },
+  addCallRow(obj={}){
+    const tb=document.querySelector('#l2_callTable tbody'); const tr=document.createElement('tr');
+    tr.innerHTML = '<td><input placeholder="Relation" value="'+(obj.relation||'')+'"></td>' +
+      '<td><input type="time" value="'+(obj.time||'')+'"></td>' +
+      '<td><input placeholder="Reason" value="'+(obj.reason||'')+'"></td>' +
+      '<td><input placeholder="Duration" value="'+(obj.duration||'')+'"></td>' +
+      '<td><input placeholder="Platform" value="'+(obj.platform||'')+'"></td>' +
+      '<td><input placeholder="1st" value="'+(obj.c1||'')+'"></td>' +
+      '<td><input placeholder="2nd" value="'+(obj.c2||'')+'"></td>' +
+      '<td><input placeholder="3rd" value="'+(obj.c3||'')+'"></td>' +
+      '<td><input placeholder="4th" value="'+(obj.c4||'')+'"></td>' +
+      '<td><input placeholder="5th" value="'+(obj.c5||'')+'"></td>' +
+      '<td><input placeholder="6th" value="'+(obj.c6||'')+'"></td>' +
+      '<td><button type="button" class="btn" onclick="this.closest(`tr`).remove()">Remove</button></td>';
+    tb.appendChild(tr);
+  },
+  addBankRow(obj={}){
+    const tb=document.querySelector('#l2_bankTable tbody'); const tr=document.createElement('tr');
+    tr.innerHTML = '<td><input placeholder="Bank name" value="'+(obj.name||'')+'"></td>' +
+      '<td><input placeholder="Single/Joint" value="'+(obj.singleJoint||'')+'"></td>' +
+      '<td><input placeholder="Saving/Current" value="'+(obj.type||'')+'"></td>' +
+      '<td><input type="number" min="1900" max="2100" placeholder="Year" value="'+(obj.year||'')+'"></td>' +
+      '<td><input placeholder="Purpose" value="'+(obj.purpose||'')+'"></td>' +
+      '<td><input placeholder="Yes/No" value="'+(obj.chequeBook||'')+'"></td>' +
+      '<td><input placeholder="Yes/No" value="'+(obj.passbook||'')+'"></td>' +
+      '<td><input placeholder="Yes/No" value="'+(obj.internetBanking||'')+'"></td>' +
+      '<td><input placeholder="Yes/No" value="'+(obj.phoneBanking||'')+'"></td>' +
+      '<td><input placeholder="UPI ID" value="'+(obj.upi||'')+'"></td>' +
+      '<td><input placeholder="PhonePe" value="'+(obj.phonepe||'')+'"></td>' +
+      '<td><input placeholder="Google Pay" value="'+(obj.googlepay||'')+'"></td>' +
+      '<td><input placeholder="Closing Bal." value="'+(obj.closingBalance||'')+'"></td>' +
+      '<td><input placeholder="FD" value="'+(obj.fd||'')+'"></td>' +
+      '<td><input placeholder="km" value="'+(obj.distance||'')+'"></td>' +
+      '<td><button type="button" class="btn" onclick="this.closest(`tr`).remove()">Remove</button></td>';
+    tb.appendChild(tr);
+  },
+  bindAssetAmounts(){
+    document.querySelectorAll('#sec-assets .asset-amt').forEach(amt=>{
+      const chkId = amt.id.replace('_amt','');
+      const chk = document.getElementById(chkId);
+      const sync = ()=>{ amt.disabled = !(chk && chk.checked); };
+      if (chk){ chk.addEventListener('change', sync); sync(); }
+    });
+  }
+};
+
+/* Init Line 2 dynamic rows + assets */
+(function(){
+  L2.addFamilyRow(); L2.addCallRow(); L2.addBankRow(); L2.bindAssetAmounts();
+
+  document.getElementById('l2_saveDraft').addEventListener('click', ()=>{
+    const form = document.getElementById('tab-line2');
+    const base = Object.fromEntries(new FormData(form).entries());
+    const fam  = L2.tableToArray(document.querySelector('#l2_familyTable tbody'),
+      ['member','age','job','workTime','homeTime','workOff','remarks','expectedVisitors']);
+    const calls= L2.tableToArray(document.querySelector('#l2_callTable tbody'),
+      ['relation','time','reason','duration','platform','c1','c2','c3','c4','c5','c6']);
+    const banks= L2.tableToArray(document.querySelector('#l2_bankTable tbody'),
+      ['name','singleJoint','type','year','purpose','chequeBook','passbook','internetBanking','phoneBanking','upi','phonepe','googlepay','closingBalance','fd','distance']);
+    const assetKeys=['rd','mutualFunds','shares','gold','diamond','silver','vehicle','realestate','cash','crypto','ppf','pf','epf','gpf','coins','limitedBooks','expWatches'];
+    const assets={}; assetKeys.forEach(k=>{
+      const has = (document.getElementById('l2_asset_'+k)||{}).checked || false;
+      const amtEl = document.getElementById('l2_asset_'+k+'_amt'); const amt = amtEl?amtEl.value:'';
+      if (has || amt) assets[k]={has,amount:amt};
+    });
+    localStorage.setItem('alpha_line2_draft', JSON.stringify({base,fam,calls,banks,assets}));
+    alert('Draft saved on this device.');
+  });
+
+  document.getElementById('l2_loadDraft').addEventListener('click', ()=>{
+    const raw=localStorage.getItem('alpha_line2_draft'); if(!raw) return alert('No draft found.');
+    const {base={},fam=[],calls=[],banks=[],assets={}} = JSON.parse(raw);
+    const form = document.getElementById('tab-line2');
+    for(const [k,v] of Object.entries(base)){
+      const el = form.elements[k]; if(!el) continue;
+      if(el.type==='checkbox') el.checked=(v==='on'||v===true||v==='true'); else el.value=v;
+    }
+    const fb=document.querySelector('#l2_familyTable tbody'); fb.innerHTML=''; fam.forEach(r=>L2.addFamilyRow(r));
+    const cb=document.querySelector('#l2_callTable tbody'); cb.innerHTML=''; calls.forEach(r=>L2.addCallRow(r));
+    const bb=document.querySelector('#l2_bankTable tbody'); bb.innerHTML=''; banks.forEach(r=>L2.addBankRow(r));
+    Object.entries(assets).forEach(([k,v])=>{
+      const chk=document.getElementById('l2_asset_'+k); const amt=document.getElementById('l2_asset_'+k+'_amt');
+      if(chk) chk.checked=!!v.has; if(amt) amt.value=v.amount||'';
+    });
+    L2.bindAssetAmounts();
+  });
+
+  document.getElementById('l2_downloadPdf').addEventListener('click', generateLine2PDF);
+})();
+
+/* ------- LINE 2 submit -------- */
+document.getElementById('tab-line2').addEventListener('submit', async (e)=>{
+  e.preventDefault();
+  const s = document.getElementById('status2');
+  const form = e.target;
+
+  const fam  = L2.tableToArray(document.querySelector('#l2_familyTable tbody'),
+    ['member','age','job','workTime','homeTime','workOff','remarks','expectedVisitors']);
+  const calls= L2.tableToArray(document.querySelector('#l2_callTable tbody'),
+    ['relation','time','reason','duration','platform','c1','c2','c3','c4','c5','c6']);
+  const banks= L2.tableToArray(document.querySelector('#l2_bankTable tbody'),
+    ['name','singleJoint','type','year','purpose','chequeBook','passbook','internetBanking','phoneBanking','upi','phonepe','googlepay','closingBalance','fd','distance']);
+
+  const assetKeys=['rd','mutualFunds','shares','gold','diamond','silver','vehicle','realestate','cash','crypto','ppf','pf','epf','gpf','coins','limitedBooks','expWatches'];
+  const assets={}; assetKeys.forEach(k=>{
+    const has=(document.getElementById('l2_asset_'+k)||{}).checked||false;
+    const amtEl=document.getElementById('l2_asset_'+k+'_amt');
+    const amt=amtEl?amtEl.value:'';
+    if(has||amt) assets[k]={has,amount:amt};
+  });
+
+  const fd = new FormData(form);
+  fd.append('family_json', JSON.stringify(fam));
+  fd.append('calls_json',  JSON.stringify(calls));
+  fd.append('banks_json',  JSON.stringify(banks));
+  fd.append('assets_json', JSON.stringify(assets));
+
+  s.textContent = 'Submitting…';
+  try{
+    await fetch(SCRIPT_URL_LINE2, { method:'POST', mode:'no-cors', body: fd });
+    s.textContent='Submitted!';
+    form.reset(); L2.bindAssetAmounts();
+  }catch(err){ console.error(err); s.textContent='Network error'; }
+});
+
+/* ======== PDF: polished, bold, landscape ======== */
+function generateLine2PDF(){
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({orientation:'landscape', unit:'mm', format:'a4', compressPdf:true});
+  const margin = 14;
+  const pageW = doc.internal.pageSize.getWidth();
+  const pageH = doc.internal.pageSize.getHeight();
+  let y = 30;
+
+  // Header
+  doc.setFont('helvetica','bold'); doc.setFontSize(16);
+  doc.text('Client Information (Line 2)', margin, 16);
+  doc.setFont('helvetica','normal'); doc.setFontSize(10);
+  doc.text(`Generated: ${new Date().toLocaleString()}`, margin, 22);
+
+  // helpers
+  const form = document.getElementById('tab-line2');
+  const v = n => (form.elements[n]?.value || '').trim();
+  const safe = s => (s || '').toString();
+
+  function addSectionHeader(title){
+    // Bold gradient-like bar effect (dark fill + white text)
+    doc.setFillColor(18,24,50);
+    doc.rect(margin, y, pageW - margin*2, 9, 'F');
+    doc.setTextColor(255,255,255);
+    doc.setFont('helvetica','bold'); doc.setFontSize(12);
+    doc.text(title, margin+2, y+6.3);
+    doc.setTextColor(0,0,0);
+    y += 12;
+  }
+  function addDetailsSection(title, rows){
+    const filled = rows.filter(r=>r[1] && String(r[1]).trim()!=='');
+    if(!filled.length) return;
+    addSectionHeader(title);
+    const leftX = margin+2, rightX = margin + (pageW - margin*2)/2 + 10, lineH = 6;
+    doc.setFont('helvetica','normal'); doc.setFontSize(10);
+    let iShown = 0;
+    filled.forEach(r=>{
+      const x = (iShown % 2 === 0) ? leftX : rightX;
+      if(iShown % 2 === 0 && iShown>0) y += lineH;
+      if(y > pageH - 20){ doc.addPage(); y = 20; }
+      doc.setFont('helvetica','bold'); doc.text(`${r[0]}:`, x, y);
+      doc.setFont('helvetica','normal'); doc.text(safe(r[1]), x + 34, y);
+      iShown++;
+    });
+    y += 8;
+  }
+
+  addDetailsSection('Personal Details', [
+    ['Client Name', v('clientName')], ['Date', v('date')],
+    ['Time', v('time')], ['Language', v('language')],
+    ['Line 1', v('line1')], ['Line 2', v('line2')],
+    ['Line 3', v('line3')], ['Charging (%)', v('charging')],
+    ['Plugin', v('plugin')], ['Current Location', v('currentLocation')],
+    ['Third Party (Y/N)', v('thirdParty')], ['Client DOB', v('dob')],
+    ['Client Age', v('age')], ['Aadhaar Number', v('aadhaar')],
+    ['Gender', v('gender')], ['Marriage (Y/N)', v('marriage')],
+    ['Kids (0–5)', v('kids')], ['Date of Marriage', v('dom')]
+  ]);
+
+  addDetailsSection('Contact Information', [
+    ['Number (Y/N)', v('numberActive')], ['WhatsApp (Y/N)', v('whatsapp')],
+    ['Phone Number', v('phone1')], ['2nd Number', v('phone2')],
+    ['Emergency No', v('emergencyNo')], ['E-mail', v('email')]
+  ]);
+
+  addDetailsSection('Education & Employment', [
+    ['Education', v('education')], ['Work (Y/N)', v('workYN')],
+    ['Position', v('position')], ['Employment', v('employment')],
+    ['Working Since', v('workSince')], ['Company Name', v('companyName')],
+    ['Current Address', v('currentAddress')]
+  ]);
+
+  addDetailsSection('Physical Details', [
+    ['Phone Model', v('phoneModel')], ['Other Phone (Y/N)', v('otherPhoneYN')],
+    ['Laptop (Y/N)', v('laptopYN')], ['2-wheeler (Y/N)', v('twoWheelerYN')],
+    ['4-wheeler (Y/N)', v('fourWheelerYN')], ['Total vehicles', v('totalVehicle')],
+    ['Height (cm)', v('height')], ['Weight (kg)', v('weight')],
+    ['Color Tone', v('colorTone')]
+  ]);
+
+  addDetailsSection('Identification', [
+    ['Passport (Y/N)', v('passportYN')], ['Voter ID (Y/N)', v('voterIdYN')],
+    ['Place of Birth', v('pob')], ['Nationality', v('nationality')],
+    ['Visa Rejected (Y/N)', v('visaRejected')], ['Overstay (Y/N)', v('overstayYN')]
+  ]);
+
+  // Stage checklist (compact table)
+  const stageKeys = ['whatsapp','idPhoto','frontId','backId','cis','mainSuspect','evidence','cLetter','nSecret','nsRules','nsExplained','oath','arrestWarrantExp','arrestWarrantLetter','priority','request'];
+  const stageRows = stageKeys.map(k=>[k, (form.elements['stage_'+k]||{}).checked ? 'Yes' : '' ]);
+  addSectionHeader('Client Stage');
+  doc.autoTable({
+    startY:y,
+    head:[["Stage Item","Done"]],
+    body:stageRows,
+    styles:{font:'helvetica', fontSize:9, cellPadding:2},
+    headStyles:{fillColor:[18,24,50], textColor:255},
+    theme:'grid',
+    margin:{left:margin, right:margin}
+  });
+  y = doc.lastAutoTable.finalY + 6;
+
+  // Family
+  const fam = L2.tableToArray(document.querySelector('#l2_familyTable tbody'), ['member','age','job','workTime','homeTime','workOff','remarks','expectedVisitors']);
+  if(fam.length){
+    addSectionHeader('Family Members');
+    doc.autoTable({
+      startY:y,
+      head:[["Member","Age","Job","Work/School","Home Time","Work Off","Remarks","Expected Visitors"]],
+      body:fam.map(r=>[r.member,r.age,r.job,r.workTime,r.homeTime,r.workOff,r.remarks,r.expectedVisitors]),
+      styles:{font:'helvetica', fontSize:9, cellPadding:2}, headStyles:{fillColor:[18,24,50], textColor:255},
+      theme:'grid', margin:{left:margin, right:margin}
+    });
+    y = doc.lastAutoTable.finalY + 6;
+  }
+
+  // Calls
+  const calls = L2.tableToArray(document.querySelector('#l2_callTable tbody'), ['relation','time','reason','duration','platform','c1','c2','c3','c4','c5','c6']);
+  if(calls.length){
+    addSectionHeader('Daily Call Log');
+    doc.autoTable({
+      startY:y,
+      head:[["Relation","Time","Reason","Duration","Platform","1st","2nd","3rd","4th","5th","6th"]],
+      body:calls.map(r=>[r.relation,r.time,r.reason,r.duration,r.platform,r.c1,r.c2,r.c3,r.c4,r.c5,r.c6]),
+      styles:{font:'helvetica', fontSize:9, cellPadding:2}, headStyles:{fillColor:[18,24,50], textColor:255},
+      theme:'grid', margin:{left:margin, right:margin}
+    });
+    y = doc.lastAutoTable.finalY + 6;
+  }
+
+  // Banks (with Distance column)
+  const banks = L2.tableToArray(document.querySelector('#l2_bankTable tbody'), ['name','singleJoint','type','year','purpose','chequeBook','passbook','internetBanking','phoneBanking','upi','phonepe','googlepay','closingBalance','fd','distance']);
+  if(banks.length){
+    addSectionHeader('Bank Details');
+    doc.autoTable({
+      startY:y,
+      head:[["Bank","S/J","Type","Year","Purpose","Cheque","Passbook","Internet","Phone","UPI","PhonePe","GPay","CB","FD","Distance (km)"]],
+      body:banks.map(r=>[r.name,r.singleJoint,r.type,r.year,r.purpose,r.chequeBook,r.passbook,r.internetBanking,r.phoneBanking,r.upi,r.phonepe,r.googlepay,r.closingBalance,r.fd,r.distance]),
+      styles:{font:'helvetica', fontSize:9, cellPadding:2}, headStyles:{fillColor:[18,24,50], textColor:255},
+      theme:'grid', margin:{left:margin, right:margin}
+    });
+    y = doc.lastAutoTable.finalY + 6;
+  }
+
+  // Assets (including EPF/GPF)
+  const assetKeys=['rd','mutualFunds','shares','gold','diamond','silver','vehicle','realestate','cash','crypto','ppf','pf','epf','gpf','coins','limitedBooks','expWatches'];
+  const assets=[];
+  assetKeys.forEach(k=>{
+    const chk=document.getElementById('l2_asset_'+k);
+    const amt=document.getElementById('l2_asset_'+k+'_amt');
+    const has = chk && chk.checked ? 'Y' : '';
+    const val = amt ? (amt.value||'') : '';
+    if(has || val){
+      const name = k.replace(/([A-Z])/g,' $1').replace(/^./,m=>m.toUpperCase());
+      assets.push([name, has, val]);
+    }
+  });
+  if(assets.length){
+    addSectionHeader('Assets');
+    doc.autoTable({
+      startY:y,
+      head:[["Asset","Has","Amount"]],
+      body:assets,
+      styles:{font:'helvetica', fontSize:10, cellPadding:3}, headStyles:{fillColor:[18,24,50], textColor:255},
+      theme:'grid', margin:{left:margin, right:margin}
+    });
+  }
+
+  // Footer page numbers
+  const count=doc.internal.getNumberOfPages();
+  for(let i=1;i<=count;i++){
+    doc.setPage(i); doc.setFontSize(8);
+    doc.text(`Page ${i} of ${count}`, pageW-20, pageH-10, {align:'right'});
+  }
+
+  const client = v('clientName') || 'Client';
+  const d = new Date();
+  const fname = `Line2_${client.replace(/\\s+/g,'_')}_${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}.pdf`;
+  doc.save(fname);
+}
+
+/* ===== util for extracting table rows for old helpers (not needed now, but kept) ===== */
+function tableRows(id){
+  const rows=[];
+  document.querySelectorAll(`#${id} tbody tr`).forEach(tr=>{
+    rows.push([...tr.querySelectorAll('input')].map(i=>i.value));
+  });
+  return rows;
+}
+</script>
+</body>
+</html>
